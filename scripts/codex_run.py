@@ -176,20 +176,33 @@ def decide_outcome(exit_code: int, events: list[dict]) -> Outcome:
     return Outcome(status="unknown", exit_code=1)
 
 
-def build_argv(*, model: str, effort: str, prompt: str) -> list[str]:
+def build_argv(
+    *,
+    model: str,
+    effort: str,
+    prompt: str,
+    mcp_servers: list[str] | None = None,
+) -> list[str]:
     """Assemble the `codex exec` command line.
 
     The model is always passed explicitly. Leaving it out lets the user's
     ~/.codex/config.toml choose, and codex accepts a stale slug there without
     complaint.
     """
-    return [
-        "codex",
-        "exec",
-        "--json",
-        "-m",
-        model,
-        "-c",
-        f"model_reasoning_effort={effort}",
-        prompt,
-    ]
+    argv = ["codex", "exec", "--json", "-m", model]
+
+    argv += ["-c", f"model_reasoning_effort={effort}"]
+    # Reasoning summaries are what populate the live progress stream; codex
+    # suppresses `reasoning` items entirely when this is "none".
+    argv += ["-c", "model_reasoning_summary=auto"]
+    # A configured notify hook fires on every turn end. Arrays replace on
+    # override (unlike tables, which merge), so an empty list clears it.
+    argv += ["-c", "notify=[]"]
+
+    # `-c mcp_servers={}` does NOT work: tables deep-merge, so an empty table
+    # changes nothing and every server stays enabled. Disable them by name.
+    for server in mcp_servers or []:
+        argv += ["-c", f"mcp_servers.{server}.enabled=false"]
+
+    argv.append(prompt)
+    return argv
