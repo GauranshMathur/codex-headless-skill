@@ -21,3 +21,17 @@ def test_picks_the_highest_priority_listed_model():
     }
 
     assert resolve_model(catalog).slug == "most-capable"
+
+
+def test_explicit_slug_overrides_the_priority_pick():
+    catalog = {
+        "models": [
+            {"slug": "most-capable", "priority": 1, "visibility": "list"},
+            {"slug": "cheaper", "priority": 12, "visibility": "list"},
+        ]
+    }
+
+    choice = resolve_model(catalog, explicit="cheaper")
+
+    assert choice.slug == "cheaper"
+    assert choice.source == "flag"
