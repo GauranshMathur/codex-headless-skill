@@ -7,6 +7,7 @@ the plugin must not require installing anything else.
 
 from __future__ import annotations
 
+import os
 from dataclasses import dataclass
 
 
@@ -31,25 +32,40 @@ class ModelChoice:
     source: str
 
 
-def resolve_model(catalog: dict, explicit: str | None = None) -> ModelChoice:
+MODEL_ENV_VAR = "CODEX_HEADLESS_MODEL"
+
+
+def resolve_model(
+    catalog: dict,
+    explicit: str | None = None,
+    env: dict | None = None,
+) -> ModelChoice:
     """Pick the model codex should run on.
 
-    An explicitly requested slug wins; otherwise take the most capable one on
-    offer. `priority` ranks capability with 1 as the most capable, and
-    `visibility` marks which models are user-selectable rather than internal.
+    Precedence is flag, then environment, then the most capable model on offer.
+    `priority` ranks capability with 1 as the most capable, and `visibility`
+    marks which models are user-selectable rather than internal.
+
+    `env` is injected rather than read from os.environ directly so the choice
+    stays a pure function of its inputs.
     """
+    env = os.environ if env is None else env
     listed = [m for m in catalog["models"] if m["visibility"] == "list"]
 
-    if explicit:
+    requested, source = (explicit, "flag")
+    if not requested:
+        requested, source = (env.get(MODEL_ENV_VAR), "env")
+
+    if requested:
         # Accept any slug the catalog knows, including hidden ones a power user
         # may deliberately want; only suggest the user-selectable ones.
-        if explicit not in {m["slug"] for m in catalog["models"]}:
+        if requested not in {m["slug"] for m in catalog["models"]}:
             available = ", ".join(sorted(m["slug"] for m in listed))
             raise UnknownModel(
-                f"{explicit!r} is not a model this codex build knows. "
+                f"{requested!r} is not a model this codex build knows. "
                 f"Available: {available}"
             )
-        return ModelChoice(slug=explicit, source="flag")
+        return ModelChoice(slug=requested, source=source)
 
     best = min(listed, key=lambda m: m["priority"])
     return ModelChoice(slug=best["slug"], source="catalog")

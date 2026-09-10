@@ -53,3 +53,33 @@ def test_unknown_explicit_slug_is_rejected_and_names_what_is_available():
     message = str(excinfo.value)
     assert "gpt-5-codex" in message
     assert "real-model" in message
+
+
+def test_env_var_is_used_when_no_slug_was_passed():
+    catalog = {
+        "models": [
+            {"slug": "most-capable", "priority": 1, "visibility": "list"},
+            {"slug": "cheaper", "priority": 12, "visibility": "list"},
+        ]
+    }
+
+    choice = resolve_model(catalog, env={"CODEX_HEADLESS_MODEL": "cheaper"})
+
+    assert choice.slug == "cheaper"
+    assert choice.source == "env"
+
+
+def test_explicit_slug_beats_the_env_var():
+    catalog = {
+        "models": [
+            {"slug": "most-capable", "priority": 1, "visibility": "list"},
+            {"slug": "cheaper", "priority": 12, "visibility": "list"},
+        ]
+    }
+
+    choice = resolve_model(
+        catalog, explicit="most-capable", env={"CODEX_HEADLESS_MODEL": "cheaper"}
+    )
+
+    assert choice.slug == "most-capable"
+    assert choice.source == "flag"
