@@ -1,0 +1,12 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+
+# Codex run artifacts (should never live in the repo — see docs/adr/0002)
+.codex-runs/
+
+# macOS
+.DS_Store
