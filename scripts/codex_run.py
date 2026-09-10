@@ -74,6 +74,9 @@ def resolve_model(
 DEFAULT_EFFORT = "high"
 DEFAULT_SANDBOX = "workspace-write"
 
+# Single characters so a run touching several files still fits on one line.
+CHANGE_MARKERS = {"add": "+", "update": "~", "delete": "-"}
+
 # Ordered weakest to strongest. Used to step down when a model does not offer
 # the requested rung.
 EFFORT_LADDER = ["low", "medium", "high", "xhigh", "max", "ultra"]
@@ -230,10 +233,23 @@ def render_event(event: dict) -> str | None:
     simply skip falsy results.
     """
     kind = event.get("type")
+    item = event.get("item", {})
+    item_kind = item.get("type")
 
-    if kind == "item.started":
-        item = event.get("item", {})
-        if item.get("type") == "command_execution":
-            return f"exec  {item.get('command', '')}"
+    if kind == "item.started" and item_kind == "command_execution":
+        return f"exec  {item.get('command', '')}"
+
+    if kind == "item.completed":
+        if item_kind == "command_execution":
+            exit_code = item.get("exit_code")
+            status = "ok   " if exit_code == 0 else f"exit{exit_code}"
+            return f"{status} {item.get('command', '')}"
+
+        if item_kind == "file_change":
+            changes = " ".join(
+                f"{CHANGE_MARKERS.get(c.get('kind'), '?')} {c.get('path')}"
+                for c in item.get("changes", [])
+            )
+            return f"edit  {changes}"
 
     return None
