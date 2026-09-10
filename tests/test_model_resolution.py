@@ -6,7 +6,9 @@ degrades to generic base instructions. So the wrapper always resolves a model
 itself and passes -m explicitly.
 """
 
-from codex_run import resolve_model
+import pytest
+
+from codex_run import UnknownModel, resolve_model
 
 
 def test_picks_the_highest_priority_listed_model():
@@ -35,3 +37,19 @@ def test_explicit_slug_overrides_the_priority_pick():
 
     assert choice.slug == "cheaper"
     assert choice.source == "flag"
+
+
+def test_unknown_explicit_slug_is_rejected_and_names_what_is_available():
+    """The gpt-5-codex case: codex accepts a dead slug and silently degrades.
+
+    Failing loudly here is the whole point — and the error has to say what the
+    user can pick instead, or they are left guessing.
+    """
+    catalog = {"models": [{"slug": "real-model", "priority": 1, "visibility": "list"}]}
+
+    with pytest.raises(UnknownModel) as excinfo:
+        resolve_model(catalog, explicit="gpt-5-codex")
+
+    message = str(excinfo.value)
+    assert "gpt-5-codex" in message
+    assert "real-model" in message

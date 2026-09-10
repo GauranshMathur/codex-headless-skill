@@ -10,6 +10,14 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 
+class UnknownModel(ValueError):
+    """A model slug was requested that this codex build does not know.
+
+    Worth failing on rather than passing through: codex accepts an unknown slug
+    without complaint and quietly falls back to generic base instructions.
+    """
+
+
 @dataclass(frozen=True)
 class ModelChoice:
     """A resolved model, plus where the choice came from.
@@ -30,9 +38,18 @@ def resolve_model(catalog: dict, explicit: str | None = None) -> ModelChoice:
     offer. `priority` ranks capability with 1 as the most capable, and
     `visibility` marks which models are user-selectable rather than internal.
     """
+    listed = [m for m in catalog["models"] if m["visibility"] == "list"]
+
     if explicit:
+        # Accept any slug the catalog knows, including hidden ones a power user
+        # may deliberately want; only suggest the user-selectable ones.
+        if explicit not in {m["slug"] for m in catalog["models"]}:
+            available = ", ".join(sorted(m["slug"] for m in listed))
+            raise UnknownModel(
+                f"{explicit!r} is not a model this codex build knows. "
+                f"Available: {available}"
+            )
         return ModelChoice(slug=explicit, source="flag")
 
-    listed = [m for m in catalog["models"] if m["visibility"] == "list"]
     best = min(listed, key=lambda m: m["priority"])
     return ModelChoice(slug=best["slug"], source="catalog")
