@@ -25,3 +25,28 @@ def test_exit_zero_without_a_completed_turn_is_not_success():
 
     assert outcome.status == "no_turn_completed"
     assert outcome.exit_code == 10
+
+
+def test_turn_failed_is_fatal_and_surfaces_the_reason():
+    outcome = decide_outcome(
+        exit_code=1,
+        events=[{"type": "turn.failed", "error": {"message": "model overloaded"}}],
+    )
+
+    assert outcome.status == "turn_failed"
+    assert outcome.exit_code == 11
+    assert "model overloaded" in outcome.detail
+
+
+def test_transient_error_events_do_not_sink_an_otherwise_good_run():
+    """Codex reports reconnect attempts on the same `error` channel as real
+    failures, so treating the first one as fatal would fail healthy runs."""
+    outcome = decide_outcome(
+        exit_code=0,
+        events=[
+            {"type": "error", "message": "Reconnecting... 1/5"},
+            {"type": "turn.completed"},
+        ],
+    )
+
+    assert outcome.status == "success"
