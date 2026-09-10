@@ -1,0 +1,11 @@
+# This repo ships a Claude Code plugin, not a Python package. pyproject.toml exists
+# only to configure the dev tooling; scripts/codex_run.py must stay stdlib-only so
+# the plugin has zero install-time dependencies.
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["scripts"]
+addopts = "-q --strict-markers"
+
+[dependency-groups]
+dev = ["pytest>=8.0"]
