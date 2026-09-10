@@ -123,3 +123,30 @@ def resolve_effort(model: dict, requested: str | None = None) -> EffortChoice:
         f"{model['slug']} supports no effort at or below {wanted!r}. "
         f"Supported: {', '.join(supported)}"
     )
+
+
+@dataclass(frozen=True)
+class Outcome:
+    """How a run ended, and the process exit code that reports it.
+
+    Distinct exit codes let the caller branch on the failure mode without
+    parsing prose.
+    """
+
+    status: str
+    exit_code: int
+    detail: str | None = None
+
+
+def decide_outcome(exit_code: int, events: list[dict]) -> Outcome:
+    """Classify a finished run.
+
+    Success needs both a clean exit *and* an observed terminal event, because
+    codex can exit 0 without having done any work.
+    """
+    seen = {event.get("type") for event in events}
+
+    if exit_code == 0 and "turn.completed" in seen:
+        return Outcome(status="success", exit_code=0)
+
+    return Outcome(status="unknown", exit_code=1)
