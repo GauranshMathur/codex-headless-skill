@@ -23,12 +23,16 @@ class ModelChoice:
     source: str
 
 
-def resolve_model(catalog: dict) -> ModelChoice:
+def resolve_model(catalog: dict, explicit: str | None = None) -> ModelChoice:
     """Pick the model codex should run on.
 
-    `priority` ranks capability with 1 as the most capable, and `visibility`
-    marks which models are user-selectable rather than internal.
+    An explicitly requested slug wins; otherwise take the most capable one on
+    offer. `priority` ranks capability with 1 as the most capable, and
+    `visibility` marks which models are user-selectable rather than internal.
     """
+    if explicit:
+        return ModelChoice(slug=explicit, source="flag")
+
     listed = [m for m in catalog["models"] if m["visibility"] == "list"]
     best = min(listed, key=lambda m: m["priority"])
     return ModelChoice(slug=best["slug"], source="catalog")
