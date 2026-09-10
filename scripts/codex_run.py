@@ -125,6 +125,11 @@ def resolve_effort(model: dict, requested: str | None = None) -> EffortChoice:
     )
 
 
+# Exit codes the wrapper itself returns, chosen so a caller can branch on the
+# failure mode without reading the message.
+EXIT_NO_TURN_COMPLETED = 10
+
+
 @dataclass(frozen=True)
 class Outcome:
     """How a run ended, and the process exit code that reports it.
@@ -148,5 +153,12 @@ def decide_outcome(exit_code: int, events: list[dict]) -> Outcome:
 
     if exit_code == 0 and "turn.completed" in seen:
         return Outcome(status="success", exit_code=0)
+
+    if exit_code == 0:
+        return Outcome(
+            status="no_turn_completed",
+            exit_code=EXIT_NO_TURN_COMPLETED,
+            detail="codex exited cleanly without completing a turn; no work was done.",
+        )
 
     return Outcome(status="unknown", exit_code=1)
