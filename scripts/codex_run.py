@@ -221,3 +221,19 @@ def build_argv(
 
     argv.append(prompt)
     return argv
+
+
+def render_event(event: dict) -> str | None:
+    """Render one JSONL event as a single progress line.
+
+    Returns None for events that should not produce a line, so the caller can
+    simply skip falsy results.
+    """
+    kind = event.get("type")
+
+    if kind == "item.started":
+        item = event.get("item", {})
+        if item.get("type") == "command_execution":
+            return f"exec  {item.get('command', '')}"
+
+    return None
