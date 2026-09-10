@@ -128,6 +128,7 @@ def resolve_effort(model: dict, requested: str | None = None) -> EffortChoice:
 # Exit codes the wrapper itself returns, chosen so a caller can branch on the
 # failure mode without reading the message.
 EXIT_NO_TURN_COMPLETED = 10
+EXIT_TURN_FAILED = 11
 
 
 @dataclass(frozen=True)
@@ -150,6 +151,17 @@ def decide_outcome(exit_code: int, events: list[dict]) -> Outcome:
     codex can exit 0 without having done any work.
     """
     seen = {event.get("type") for event in events}
+
+    # A failed turn is authoritative however the process exited. Note this looks
+    # only at `turn.failed`: top-level `error` events also carry retry notices
+    # such as "Reconnecting... 1/5", so they are logged, not treated as fatal.
+    failure = next((e for e in events if e.get("type") == "turn.failed"), None)
+    if failure is not None:
+        return Outcome(
+            status="turn_failed",
+            exit_code=EXIT_TURN_FAILED,
+            detail=failure.get("error", {}).get("message"),
+        )
 
     if exit_code == 0 and "turn.completed" in seen:
         return Outcome(status="success", exit_code=0)
