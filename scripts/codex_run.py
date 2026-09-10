@@ -73,6 +73,15 @@ def resolve_model(
 
 DEFAULT_EFFORT = "high"
 
+# Ordered weakest to strongest. Used to step down when a model does not offer
+# the requested rung.
+EFFORT_LADDER = ["low", "medium", "high", "xhigh", "max", "ultra"]
+
+
+class UnsupportedEffort(ValueError):
+    """No reasoning effort at or below the requested one exists for this model."""
+
+
 
 @dataclass(frozen=True)
 class EffortChoice:
@@ -91,4 +100,26 @@ def resolve_effort(model: dict, requested: str | None = None) -> EffortChoice:
     reasoning setting defeats the point of choosing it.
     """
     wanted = requested or DEFAULT_EFFORT
-    return EffortChoice(effort=wanted, requested=wanted)
+    supported = [level["effort"] for level in model["supported_reasoning_levels"]]
+
+    if wanted in supported:
+        return EffortChoice(effort=wanted, requested=wanted)
+
+    # Degrade rather than fail: not every model reaches the top rungs, and a run
+    # at the next level down is far more useful than an aborted one.
+    below = EFFORT_LADDER[: EFFORT_LADDER.index(wanted)] if wanted in EFFORT_LADDER else []
+    for candidate in reversed(below):
+        if candidate in supported:
+            return EffortChoice(
+                effort=candidate,
+                requested=wanted,
+                warning=(
+                    f"{model['slug']} does not support effort {wanted!r}; "
+                    f"using {candidate!r} instead."
+                ),
+            )
+
+    raise UnsupportedEffort(
+        f"{model['slug']} supports no effort at or below {wanted!r}. "
+        f"Supported: {', '.join(supported)}"
+    )
