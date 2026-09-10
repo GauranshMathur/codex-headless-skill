@@ -174,3 +174,22 @@ def decide_outcome(exit_code: int, events: list[dict]) -> Outcome:
         )
 
     return Outcome(status="unknown", exit_code=1)
+
+
+def build_argv(*, model: str, effort: str, prompt: str) -> list[str]:
+    """Assemble the `codex exec` command line.
+
+    The model is always passed explicitly. Leaving it out lets the user's
+    ~/.codex/config.toml choose, and codex accepts a stale slug there without
+    complaint.
+    """
+    return [
+        "codex",
+        "exec",
+        "--json",
+        "-m",
+        model,
+        "-c",
+        f"model_reasoning_effort={effort}",
+        prompt,
+    ]
