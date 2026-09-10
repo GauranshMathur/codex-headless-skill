@@ -69,3 +69,26 @@ def resolve_model(
 
     best = min(listed, key=lambda m: m["priority"])
     return ModelChoice(slug=best["slug"], source="catalog")
+
+
+DEFAULT_EFFORT = "high"
+
+
+@dataclass(frozen=True)
+class EffortChoice:
+    """A resolved reasoning effort, and what was asked for before validation."""
+
+    effort: str
+    requested: str
+    warning: str | None = None
+
+
+def resolve_effort(model: dict, requested: str | None = None) -> EffortChoice:
+    """Pick the reasoning effort for a run.
+
+    Deliberately ignores the model's own `default_reasoning_level`: gpt-6-astra
+    defaults to "low", and pairing the most capable model with its weakest
+    reasoning setting defeats the point of choosing it.
+    """
+    wanted = requested or DEFAULT_EFFORT
+    return EffortChoice(effort=wanted, requested=wanted)
