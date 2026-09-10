@@ -7,8 +7,12 @@ the plugin must not require installing anything else.
 
 from __future__ import annotations
 
+import json
 import os
+import subprocess
+from collections.abc import Callable
 from dataclasses import dataclass
+from pathlib import Path
 
 
 class UnknownModel(ValueError):
@@ -253,3 +257,73 @@ def render_event(event: dict) -> str | None:
             return f"edit  {changes}"
 
     return None
+
+
+@dataclass
+class RunResult:
+    """What a finished codex process left behind."""
+
+    exit_code: int
+    events: list[dict]
+    thread_id: str | None = None
+
+
+def run_codex(
+    argv: list[str],
+    *,
+    run_dir: Path,
+    on_line: Callable[[str], None] | None = None,
+) -> RunResult:
+    """Spawn codex, stream its JSONL, and capture everything to `run_dir`.
+
+    Events are rendered as they arrive rather than at the end, so a long run is
+    visible while it happens. The raw stream is kept verbatim alongside, since a
+    rendered line is lossy and post-hoc debugging needs the original.
+
+    codex's own stdin is /dev/null: an inherited pipe gets appended to the prompt
+    as a <stdin> block, and a closed stdin turns any approval read into an
+    immediate EOF instead of a hang.
+    """
+    run_dir.mkdir(parents=True, exist_ok=True)
+    events: list[dict] = []
+    thread_id: str | None = None
+
+    with (
+        open(run_dir / "events.jsonl", "w", encoding="utf-8") as raw,
+        open(run_dir / "stderr.log", "wb") as errlog,
+    ):
+        process = subprocess.Popen(
+            argv,
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.PIPE,
+            stderr=errlog,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            start_new_session=True,
+        )
+
+        for line in process.stdout:
+            raw.write(line)
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                event = json.loads(line)
+            except json.JSONDecodeError:
+                # A crashed codex can leave a truncated final line. One bad line
+                # is not a reason to discard a whole run.
+                continue
+
+            events.append(event)
+            if event.get("type") == "thread.started":
+                thread_id = event.get("thread_id")
+
+            if on_line is not None:
+                rendered = render_event(event)
+                if rendered:
+                    on_line(rendered)
+
+        process.wait()
+
+    return RunResult(exit_code=process.returncode, events=events, thread_id=thread_id)
