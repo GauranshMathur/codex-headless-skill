@@ -48,3 +48,24 @@ def test_the_prompt_is_the_final_argument():
     argv = build_argv(model="m", effort="high", prompt="the brief")
 
     assert argv[-1] == "the brief"
+
+
+def test_sandbox_defaults_to_workspace_write():
+    """`codex exec` itself defaults to read-only, so an implementation request
+    with no explicit sandbox quietly produces a plan instead of edits."""
+    argv = build_argv(model="m", effort="high", prompt="p")
+
+    assert argv[argv.index("-s") + 1] == "workspace-write"
+
+
+def test_carries_the_workspace_and_final_message_path():
+    argv = build_argv(
+        model="m",
+        effort="high",
+        prompt="p",
+        cwd="/repo",
+        last_message_path="/runs/last.md",
+    )
+
+    assert argv[argv.index("-C") + 1] == "/repo"
+    assert argv[argv.index("-o") + 1] == "/runs/last.md"

@@ -72,6 +72,7 @@ def resolve_model(
 
 
 DEFAULT_EFFORT = "high"
+DEFAULT_SANDBOX = "workspace-write"
 
 # Ordered weakest to strongest. Used to step down when a model does not offer
 # the requested rung.
@@ -181,6 +182,9 @@ def build_argv(
     model: str,
     effort: str,
     prompt: str,
+    sandbox: str = DEFAULT_SANDBOX,
+    cwd: str | None = None,
+    last_message_path: str | None = None,
     mcp_servers: list[str] | None = None,
 ) -> list[str]:
     """Assemble the `codex exec` command line.
@@ -189,7 +193,13 @@ def build_argv(
     ~/.codex/config.toml choose, and codex accepts a stale slug there without
     complaint.
     """
-    argv = ["codex", "exec", "--json", "-m", model]
+    # --color never: we render the run ourselves from the JSONL stream, and stray
+    # escape sequences only make the captured stderr log harder to read.
+    argv = ["codex", "exec", "--json", "--color", "never", "-m", model]
+
+    # Always explicit: codex exec defaults to read-only, so an implementation
+    # task without this produces a plan and no edits.
+    argv += ["-s", sandbox]
 
     argv += ["-c", f"model_reasoning_effort={effort}"]
     # Reasoning summaries are what populate the live progress stream; codex
@@ -203,6 +213,11 @@ def build_argv(
     # changes nothing and every server stays enabled. Disable them by name.
     for server in mcp_servers or []:
         argv += ["-c", f"mcp_servers.{server}.enabled=false"]
+
+    if cwd:
+        argv += ["-C", cwd]
+    if last_message_path:
+        argv += ["-o", last_message_path]
 
     argv.append(prompt)
     return argv
