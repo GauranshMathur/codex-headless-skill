@@ -14,3 +14,14 @@ def test_exit_zero_with_a_completed_turn_is_success():
 
     assert outcome.status == "success"
     assert outcome.exit_code == 0
+
+
+def test_exit_zero_without_a_completed_turn_is_not_success():
+    """openai/codex#19309 — codex exits cleanly having done nothing at all."""
+    outcome = decide_outcome(
+        exit_code=0,
+        events=[{"type": "thread.started", "thread_id": "abc"}, {"type": "turn.started"}],
+    )
+
+    assert outcome.status == "no_turn_completed"
+    assert outcome.exit_code == 10
