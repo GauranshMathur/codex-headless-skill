@@ -28,11 +28,18 @@ back to generic instructions, which is how a stale `model = "gpt-5-codex"` in
 
 ## Choosing an effort
 
-Defaults to `high`, deliberately not the model's own default — `gpt-6-astra`
-ships `default_reasoning_level: "low"`, and the strongest model at its weakest
-setting is the worst of both.
+Every run uses `high` unless the user asks for a different effort. Do not pick
+one yourself, up or down: the trade between cost and depth belongs to the user,
+and a run that quietly drops to `low` or climbs to `max` spends their budget on
+a decision they never made. `high` is deliberately not the model's own
+default — `gpt-6-astra` ships `default_reasoning_level: "low"`, and the
+strongest model at its weakest setting is the worst of both.
 
-| Effort | Reach for it when |
+When the user does ask, pass `--effort <level>`. If they describe what they want
+("go cheap on this", "think hard") rather than naming a level, map it with this
+table:
+
+| Effort | Suits |
 |---|---|
 | `low` / `medium` | mechanical, repetitive edits across many files |
 | `high` | the default; ordinary feature and bug work |
@@ -44,7 +51,8 @@ than a model offers steps down to its best supported rung and says so, rather
 than failing the run.
 
 `max` and `ultra` on a vague brief is the main way to spend a lot of money on a
-bad diff. Tighten the brief before raising the effort.
+bad diff. If a run at `high` falls short, tighten the brief first; if more effort
+still seems warranted, suggest it to the user rather than raising it yourself.
 
 ## Exit codes
 
