@@ -2,7 +2,7 @@
 name: exec
 description: Delegate implementation work to OpenAI Codex running headless via `codex exec`. Claude scopes the task and verifies the result; codex writes all the code. Use this whenever the user says "have codex do this", "delegate this to codex", "get codex to implement/fix/refactor X", "run this through codex", mentions codex headless or `codex exec`, or asks for work to be handed to another agent while Claude supervises. Also use it when the user wants a large implementation done without spending Claude's context on writing the code. Do NOT use it for questions you can answer directly, one-line edits, or when the user asked you specifically to make the change yourself.
 argument-hint: "[--model SLUG] [--effort high|max] <what codex should build>"
-version: 0.0.0 # x-release-please-version
+version: 0.1.0 # x-release-please-version
 allowed-tools:
   - Read
   - Glob
