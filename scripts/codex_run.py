@@ -9,7 +9,11 @@ from __future__ import annotations
 
 import json
 import os
+import queue
+import signal
 import subprocess
+import threading
+import time
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
@@ -137,6 +141,8 @@ def resolve_effort(model: dict, requested: str | None = None) -> EffortChoice:
 # failure mode without reading the message.
 EXIT_NO_TURN_COMPLETED = 10
 EXIT_TURN_FAILED = 11
+EXIT_TIMEOUT = 12
+EXIT_IDLE_TIMEOUT = 13
 
 
 @dataclass(frozen=True)
@@ -152,12 +158,25 @@ class Outcome:
     detail: str | None = None
 
 
-def decide_outcome(exit_code: int, events: list[dict]) -> Outcome:
+def decide_outcome(
+    exit_code: int,
+    events: list[dict],
+    timed_out: str | None = None,
+) -> Outcome:
     """Classify a finished run.
 
     Success needs both a clean exit *and* an observed terminal event, because
     codex can exit 0 without having done any work.
     """
+    # A run we stopped ourselves is reported as such whatever the process did on
+    # its way out; the exit code of a killed process says nothing useful.
+    if timed_out:
+        return Outcome(
+            status="timeout",
+            exit_code=EXIT_TIMEOUT if timed_out == "wall_clock" else EXIT_IDLE_TIMEOUT,
+            detail=f"run stopped after the {timed_out.replace('_', ' ')} limit was reached.",
+        )
+
     seen = {event.get("type") for event in events}
 
     # A failed turn is authoritative however the process exited. Note this looks
@@ -266,6 +285,33 @@ class RunResult:
     exit_code: int
     events: list[dict]
     thread_id: str | None = None
+    timed_out: str | None = None
+    pgid: int | None = None
+
+
+def _terminate_group(pgid: int, process: subprocess.Popen, grace: float = 10.0) -> None:
+    """Kill the whole process group, escalating if it does not go quietly.
+
+    Killing only the direct child would orphan codex's own children, which then
+    keep editing files after the caller believes the run has stopped.
+
+    Liveness is judged by reaping the direct child rather than by probing the
+    group with signal 0: between SIGTERM and the reap the child is a zombie, and
+    probing a group whose only member is a zombie reports EPERM rather than the
+    "no such process" this wants to detect.
+    """
+    try:
+        os.killpg(pgid, signal.SIGTERM)
+    except ProcessLookupError:
+        return
+
+    try:
+        process.wait(timeout=grace)
+    except subprocess.TimeoutExpired:
+        try:
+            os.killpg(pgid, signal.SIGKILL)
+        except ProcessLookupError:
+            pass
 
 
 def run_codex(
@@ -273,6 +319,8 @@ def run_codex(
     *,
     run_dir: Path,
     on_line: Callable[[str], None] | None = None,
+    timeout: float | None = None,
+    idle_timeout: float | None = None,
 ) -> RunResult:
     """Spawn codex, stream its JSONL, and capture everything to `run_dir`.
 
@@ -283,10 +331,16 @@ def run_codex(
     codex's own stdin is /dev/null: an inherited pipe gets appended to the prompt
     as a <stdin> block, and a closed stdin turns any approval read into an
     immediate EOF instead of a hang.
+
+    Output is drained on a separate thread so the two deadlines can be enforced
+    while a read is outstanding. `idle_timeout` is the one that catches a hung
+    run — a wall-clock limit alone cannot distinguish a run that is stuck from
+    one that is merely long.
     """
     run_dir.mkdir(parents=True, exist_ok=True)
     events: list[dict] = []
     thread_id: str | None = None
+    timed_out: str | None = None
 
     with (
         open(run_dir / "events.jsonl", "w", encoding="utf-8") as raw,
@@ -302,9 +356,51 @@ def run_codex(
             errors="replace",
             start_new_session=True,
         )
+        pgid = os.getpgid(process.pid)
 
-        for line in process.stdout:
+        inbox: queue.Queue[str | None] = queue.Queue()
+
+        def drain() -> None:
+            try:
+                for line in process.stdout:
+                    inbox.put(line)
+            finally:
+                inbox.put(None)
+
+        threading.Thread(target=drain, daemon=True).start()
+
+        started = time.monotonic()
+        last_seen = started
+
+        while True:
+            now = time.monotonic()
+            if timeout is not None and now - started >= timeout:
+                timed_out = "wall_clock"
+                break
+            if idle_timeout is not None and now - last_seen >= idle_timeout:
+                timed_out = "idle"
+                break
+
+            budgets = [
+                deadline - elapsed
+                for deadline, elapsed in (
+                    (timeout, now - started),
+                    (idle_timeout, now - last_seen),
+                )
+                if deadline is not None
+            ]
+
+            try:
+                line = inbox.get(timeout=min(budgets) if budgets else None)
+            except queue.Empty:
+                continue
+
+            if line is None:
+                break
+
             raw.write(line)
+            last_seen = time.monotonic()
+
             line = line.strip()
             if not line:
                 continue
@@ -324,6 +420,15 @@ def run_codex(
                 if rendered:
                     on_line(rendered)
 
+        if timed_out:
+            _terminate_group(pgid, process)
+
         process.wait()
 
-    return RunResult(exit_code=process.returncode, events=events, thread_id=thread_id)
+    return RunResult(
+        exit_code=process.returncode,
+        events=events,
+        thread_id=thread_id,
+        timed_out=timed_out,
+        pgid=pgid,
+    )
