@@ -7,16 +7,22 @@ the plugin must not require installing anything else.
 
 from __future__ import annotations
 
+import argparse
 import json
 import os
 import queue
 import signal
 import subprocess
+import sys
 import threading
 import time
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
+
+
+class CatalogUnavailable(RuntimeError):
+    """codex's model catalog could not be read at all."""
 
 
 class UnknownModel(ValueError):
@@ -432,3 +438,124 @@ def run_codex(
         timed_out=timed_out,
         pgid=pgid,
     )
+
+
+def load_catalog() -> dict:
+    """Read codex's model catalog.
+
+    The bundled catalog is the primary source: it needs no network, returns in
+    milliseconds, and on the builds checked matches the refreshed one byte for
+    byte. The network refresh is the fallback, since it is what picks up a
+    `model_catalog_json` override or a server-side addition.
+    """
+    for command in (
+        ["codex", "debug", "models", "--bundled"],
+        ["codex", "debug", "models"],
+    ):
+        try:
+            done = subprocess.run(command, capture_output=True, text=True, timeout=30)
+        except (OSError, subprocess.SubprocessError):
+            continue
+        if done.returncode == 0:
+            try:
+                return json.loads(done.stdout)
+            except json.JSONDecodeError:
+                continue
+    raise CatalogUnavailable(
+        "Could not read the codex model catalog. Is codex installed and on PATH?"
+    )
+
+
+def read_prompt() -> str:
+    """Read the brief from our own stdin.
+
+    Taking the brief this way means the caller never needs a file-writing tool to
+    hand over a long prompt — a bash heredoc is enough.
+    """
+    return sys.stdin.read()
+
+
+def _mcp_server_names(codex_home: Path | None = None) -> list[str]:
+    """Names of every MCP server configured for codex.
+
+    Needed because servers can only be switched off one at a time; there is no
+    working way to clear them all at once.
+    """
+    home = codex_home or Path(os.environ.get("CODEX_HOME", Path.home() / ".codex"))
+    config = home / "config.toml"
+    if not config.exists():
+        return []
+    try:
+        import tomllib
+
+        with open(config, "rb") as handle:
+            return list(tomllib.load(handle).get("mcp_servers", {}).keys())
+    except Exception:
+        return []
+
+
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        prog="codex_run.py",
+        description="Run Codex headless with a sane model, effort and sandbox.",
+    )
+    parser.add_argument("--model", help="model slug; defaults to the most capable")
+    parser.add_argument("--effort", help=f"reasoning effort (default {DEFAULT_EFFORT})")
+    parser.add_argument("--sandbox", default=DEFAULT_SANDBOX)
+    parser.add_argument("--cwd", help="workspace root for the run")
+    parser.add_argument("--timeout", type=float, default=570.0)
+    parser.add_argument("--idle-timeout", type=float, default=300.0)
+    parser.add_argument("--run-dir", help="where to write this run's artifacts")
+    parser.add_argument("--mcp", action="store_true", help="leave MCP servers enabled")
+    parser.add_argument("--list-models", action="store_true")
+    parser.add_argument("--dry-run", action="store_true")
+    return parser
+
+
+def main(
+    argv: list[str] | None = None,
+    *,
+    catalog_loader: Callable[[], dict] = load_catalog,
+    prompt_reader: Callable[[], str] = read_prompt,
+) -> int:
+    args = build_parser().parse_args(argv)
+    catalog = catalog_loader()
+
+    if args.list_models:
+        default = resolve_model(catalog, env={})
+        listed = sorted(
+            (m for m in catalog["models"] if m.get("visibility") == "list"),
+            key=lambda m: m.get("priority", 9999),
+        )
+        for model in listed:
+            marker = "  (default)" if model["slug"] == default.slug else ""
+            efforts = ", ".join(
+                level["effort"] for level in model.get("supported_reasoning_levels", [])
+            )
+            print(f"{model['slug']}{marker}\n    efforts: {efforts}")
+        return 0
+
+    model = resolve_model(catalog, explicit=args.model)
+    spec = next(m for m in catalog["models"] if m["slug"] == model.slug)
+    effort = resolve_effort(spec, requested=args.effort)
+    if effort.warning:
+        print(f"warning: {effort.warning}", file=sys.stderr)
+
+    argv_out = build_argv(
+        model=model.slug,
+        effort=effort.effort,
+        prompt=prompt_reader(),
+        sandbox=args.sandbox,
+        cwd=args.cwd,
+        mcp_servers=[] if args.mcp else _mcp_server_names(),
+    )
+
+    if args.dry_run:
+        print(" ".join(argv_out[:-1]))
+        return 0
+
+    raise SystemExit("running is wired up in a later slice")
+
+
+if __name__ == "__main__":  # pragma: no cover
+    sys.exit(main())
