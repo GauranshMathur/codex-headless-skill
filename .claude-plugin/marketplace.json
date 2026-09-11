@@ -1,0 +1,17 @@
+{
+  "name": "gauransh",
+  "owner": {
+    "name": "Gauransh Mathur",
+    "url": "https://github.com/GauranshMathur"
+  },
+  "description": "Gauransh Mathur's Claude Code plugins.",
+  "plugins": [
+    {
+      "name": "codex-headless",
+      "source": "./",
+      "description": "Delegate implementation work to OpenAI Codex running headless, with Claude scoping and verifying.",
+      "category": "development",
+      "keywords": ["codex", "openai", "headless", "delegation", "orchestration"]
+    }
+  ]
+}
