@@ -4,6 +4,7 @@
     ".": {
       "release-type": "simple",
       "package-name": "codex-headless",
+      "initial-version": "0.1.0",
       "changelog-path": "CHANGELOG.md",
       "include-component-in-tag": false,
       "extra-files": [
@@ -16,6 +17,10 @@
           "type": "json",
           "path": ".claude-plugin/marketplace.json",
           "jsonpath": "$.plugins[0].version"
+        },
+        {
+          "type": "generic",
+          "path": "skills/exec/SKILL.md"
         }
       ]
     }

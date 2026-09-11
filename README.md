@@ -101,9 +101,11 @@ Tests never call the real codex or the network: a stand-in executable emits
 canned JSONL, which is also how the hang and did-nothing failure modes are
 reproduced on demand.
 
-Commits follow [Conventional Commits](https://www.conventionalcommits.org/);
-releases are cut by release-please, which bumps the version in both plugin
-manifests.
+Commits follow [Conventional Commits](https://www.conventionalcommits.org/).
+Releases are cut by release-please: each push to `main` refreshes an open
+release PR, and merging it tags the release, writes `CHANGELOG.md`, and bumps
+the version everywhere it appears — `version.txt`, both plugin manifests, and
+the skill's frontmatter.
 
 ## Licence
 
