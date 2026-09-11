@@ -11,7 +11,14 @@
       "source": "./",
       "description": "Delegate implementation work to OpenAI Codex running headless, with Claude scoping and verifying.",
       "category": "development",
-      "keywords": ["codex", "openai", "headless", "delegation", "orchestration"]
+      "keywords": [
+        "codex",
+        "openai",
+        "headless",
+        "delegation",
+        "orchestration"
+      ],
+      "version": "0.1.0"
     }
   ]
 }
