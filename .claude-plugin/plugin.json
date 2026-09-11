@@ -1,6 +1,6 @@
 {
   "name": "codex-headless",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Delegate implementation work to OpenAI Codex running headless, with Claude scoping the task and verifying the result. Defaults to the most capable model available and streams codex's progress live.",
   "author": {
     "name": "Gauransh Mathur",
