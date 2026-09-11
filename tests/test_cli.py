@@ -52,3 +52,36 @@ def test_dry_run_shows_the_command_without_running_codex(capsys):
     assert "-m most-capable" in out
     assert "model_reasoning_effort=max" in out
     assert "-s workspace-write" in out
+
+
+def test_a_completed_run_exits_zero_and_leaves_its_artifacts(tmp_path, fake_codex):
+    binary = fake_codex(
+        [
+            {"type": "thread.started", "thread_id": "th_cli"},
+            {"type": "turn.completed", "usage": {"output_tokens": 5}},
+        ]
+    )
+    run_dir = tmp_path / "run"
+
+    code = main(
+        ["--codex-bin", binary, "--run-dir", str(run_dir)],
+        catalog_loader=lambda: CATALOG,
+        prompt_reader=lambda: "do it",
+    )
+
+    assert code == 0
+    assert (run_dir / "events.jsonl").exists()
+
+
+def test_a_run_that_did_no_work_exits_non_zero(tmp_path, fake_codex, capsys):
+    binary = fake_codex([{"type": "thread.started", "thread_id": "th_x"}], exit_code=0)
+
+    code = main(
+        ["--codex-bin", binary, "--run-dir", str(tmp_path / "run")],
+        catalog_loader=lambda: CATALOG,
+        prompt_reader=lambda: "do it",
+    )
+
+    assert code == 10
+    # The thread id has to reach the caller, or an interrupted run cannot be resumed.
+    assert "th_x" in capsys.readouterr().out
