@@ -124,9 +124,11 @@ Three things matter here:
   finish cleanly inside that ceiling.
 - **Run it in the foreground** so the user watches progress as it happens.
 
-The model defaults to the most capable one codex offers and the effort to
-`high`; see `${CLAUDE_SKILL_DIR}/references/models-and-effort.md` to change
-either. The summary block on stdout carries `OUTCOME`, `EXIT`, `THREAD` and
+Leave `--model` and `--effort` off unless the user asked for a specific model or
+effort. The defaults (the most capable model codex offers, at `high`) are
+deliberate, and trading depth for cost is the user's call, not yours; see
+`${CLAUDE_SKILL_DIR}/references/models-and-effort.md` for how to honour a
+request. The summary block on stdout carries `OUTCOME`, `EXIT`, `THREAD` and
 `RUN_DIR`; exit codes are listed in that same reference.
 
 ## Step 4 — Verify
