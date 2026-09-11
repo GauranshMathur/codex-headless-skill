@@ -219,6 +219,7 @@ def build_argv(
     last_message_path: str | None = None,
     mcp_servers: list[str] | None = None,
     codex_bin: str = "codex",
+    resume: str | None = None,
 ) -> list[str]:
     """Assemble the `codex exec` command line.
 
@@ -228,7 +229,11 @@ def build_argv(
     """
     # --color never: we render the run ourselves from the JSONL stream, and stray
     # escape sequences only make the captured stderr log harder to read.
-    argv = [codex_bin, "exec", "--json", "--color", "never", "-m", model]
+    argv = [codex_bin, "exec"]
+    if resume:
+        # codex exec resume [OPTIONS] [SESSION_ID] [PROMPT] — options first.
+        argv.append("resume")
+    argv += ["--json", "--color", "never", "-m", model]
 
     # Always explicit: codex exec defaults to read-only, so an implementation
     # task without this produces a plan and no edits.
@@ -251,6 +256,9 @@ def build_argv(
         argv += ["-C", cwd]
     if last_message_path:
         argv += ["-o", last_message_path]
+
+    if resume:
+        argv.append(resume)
 
     argv.append(prompt)
     return argv
@@ -507,6 +515,11 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--timeout", type=float, default=570.0)
     parser.add_argument("--idle-timeout", type=float, default=300.0)
     parser.add_argument("--run-dir", help="where to write this run's artifacts")
+    parser.add_argument(
+        "--resume",
+        metavar="THREAD",
+        help="continue an existing codex thread instead of starting a new one",
+    )
     parser.add_argument("--mcp", action="store_true", help="leave MCP servers enabled")
     parser.add_argument(
         "--codex-bin",
@@ -555,6 +568,7 @@ def main(
         cwd=args.cwd,
         mcp_servers=[] if args.mcp else _mcp_server_names(),
         codex_bin=args.codex_bin,
+        resume=args.resume,
     )
 
     if args.dry_run:

@@ -69,3 +69,18 @@ def test_carries_the_workspace_and_final_message_path():
 
     assert argv[argv.index("-C") + 1] == "/repo"
     assert argv[argv.index("-o") + 1] == "/runs/last.md"
+
+
+def test_resume_continues_an_existing_thread():
+    """`codex exec resume [OPTIONS] [SESSION_ID] [PROMPT]` — options first, then
+    the id, then the follow-up prompt."""
+    argv = build_argv(model="m", effort="high", prompt="fix it", resume="th_1")
+
+    assert argv[1:3] == ["exec", "resume"]
+    assert argv[-2:] == ["th_1", "fix it"]
+
+
+def test_a_normal_run_is_not_a_resume():
+    argv = build_argv(model="m", effort="high", prompt="p")
+
+    assert "resume" not in argv
