@@ -218,6 +218,7 @@ def build_argv(
     cwd: str | None = None,
     last_message_path: str | None = None,
     mcp_servers: list[str] | None = None,
+    codex_bin: str = "codex",
 ) -> list[str]:
     """Assemble the `codex exec` command line.
 
@@ -227,7 +228,7 @@ def build_argv(
     """
     # --color never: we render the run ourselves from the JSONL stream, and stray
     # escape sequences only make the captured stderr log harder to read.
-    argv = ["codex", "exec", "--json", "--color", "never", "-m", model]
+    argv = [codex_bin, "exec", "--json", "--color", "never", "-m", model]
 
     # Always explicit: codex exec defaults to read-only, so an implementation
     # task without this produces a plan and no edits.
@@ -507,6 +508,11 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--idle-timeout", type=float, default=300.0)
     parser.add_argument("--run-dir", help="where to write this run's artifacts")
     parser.add_argument("--mcp", action="store_true", help="leave MCP servers enabled")
+    parser.add_argument(
+        "--codex-bin",
+        default=os.environ.get("CODEX_BIN", "codex"),
+        help="path to the codex executable, when it is not on PATH",
+    )
     parser.add_argument("--list-models", action="store_true")
     parser.add_argument("--dry-run", action="store_true")
     return parser
@@ -548,13 +554,44 @@ def main(
         sandbox=args.sandbox,
         cwd=args.cwd,
         mcp_servers=[] if args.mcp else _mcp_server_names(),
+        codex_bin=args.codex_bin,
     )
 
     if args.dry_run:
         print(" ".join(argv_out[:-1]))
         return 0
 
-    raise SystemExit("running is wired up in a later slice")
+    run_dir = Path(args.run_dir) if args.run_dir else _default_run_dir(args.cwd)
+    started = time.monotonic()
+
+    result = run_codex(
+        argv_out,
+        run_dir=run_dir,
+        on_line=lambda line: print(f"codex | {line}", file=sys.stderr, flush=True),
+        timeout=args.timeout,
+        idle_timeout=args.idle_timeout,
+    )
+    outcome = decide_outcome(result.exit_code, result.events, timed_out=result.timed_out)
+
+    # Summary on stdout, progress on stderr: the caller parses one and watches
+    # the other. THREAD is here so an interrupted run stays resumable.
+    print("=== codex run summary ===")
+    print(f"OUTCOME={outcome.status}  EXIT={outcome.exit_code}")
+    print(f"MODEL={model.slug}/{effort.effort}  SANDBOX={args.sandbox}")
+    print(f"DURATION={time.monotonic() - started:.1f}s")
+    print(f"THREAD={result.thread_id or '-'}")
+    print(f"RUN_DIR={run_dir}")
+    if outcome.detail:
+        print(f"DETAIL={outcome.detail}")
+
+    return outcome.exit_code
+
+
+def _default_run_dir(cwd: str | None) -> Path:
+    """Artifacts live outside the working repo — see docs/adr/0002."""
+    repo = Path(cwd or Path.cwd()).resolve().name
+    stamp = time.strftime("%Y%m%dT%H%M%SZ", time.gmtime())
+    return Path.home() / ".claude" / "codex-headless" / "runs" / repo / stamp
 
 
 if __name__ == "__main__":  # pragma: no cover
