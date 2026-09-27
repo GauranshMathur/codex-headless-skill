@@ -8,5 +8,8 @@ venv/
 # Codex run artifacts (should never live in the repo — see docs/adr/0002)
 .codex-runs/
 
+# Serena MCP project state
+.serena/
+
 # macOS
 .DS_Store
