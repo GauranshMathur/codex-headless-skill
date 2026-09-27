@@ -1,5 +1,7 @@
 """The command line the skill and the subagent actually call."""
 
+import pytest
+
 from codex_run import main
 
 CATALOG = {
@@ -40,9 +42,16 @@ def test_list_models_ranks_them_and_marks_the_default(capsys):
     assert "default" in out.lower()
 
 
-def test_dry_run_shows_the_command_without_running_codex(capsys):
+@pytest.mark.parametrize("explicit_run_dir", [False, True])
+def test_dry_run_shows_the_command_without_running_codex(
+    capsys, tmp_path, monkeypatch, explicit_run_dir
+):
+    monkeypatch.setenv("HOME", str(tmp_path))
+    args = ["--dry-run", "--effort", "max"]
+    if explicit_run_dir:
+        args += ["--run-dir", str(tmp_path / "nested" / "run")]
     code = main(
-        ["--dry-run", "--effort", "max"],
+        args,
         catalog_loader=lambda: CATALOG,
         prompt_reader=lambda: "implement the thing",
     )
@@ -52,6 +61,23 @@ def test_dry_run_shows_the_command_without_running_codex(capsys):
     assert "-m most-capable" in out
     assert "model_reasoning_effort=max" in out
     assert "-s workspace-write" in out
+    assert "-o " in out
+    assert "last-message.md" in out
+    assert list(tmp_path.iterdir()) == []
+
+
+def test_a_completed_run_writes_its_last_message(tmp_path, fake_codex):
+    binary = fake_codex([{"type": "turn.completed", "usage": {"output_tokens": 5}}])
+    run_dir = tmp_path / "nested" / "run"
+
+    code = main(
+        ["--codex-bin", binary, "--run-dir", str(run_dir)],
+        catalog_loader=lambda: CATALOG,
+        prompt_reader=lambda: "do it",
+    )
+
+    assert code == 0
+    assert (run_dir / "last-message.md").read_text() == "Final message from fake codex\n"
 
 
 def test_a_completed_run_exits_zero_and_leaves_its_artifacts(tmp_path, fake_codex):
