@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.2.0](https://github.com/GauranshMathur/codex-headless-skill/compare/v0.1.1...v0.2.0) (2026-09-27)
+
+
+### Features
+
+* **skill:** add advise skill for parallel Codex and Fable second opinions ([#9](https://github.com/GauranshMathur/codex-headless-skill/issues/9)) ([42bbc9c](https://github.com/GauranshMathur/codex-headless-skill/commit/42bbc9cb6fad8a5467968a280fadde600f26e4be))
+
+
+### Bug Fixes
+
+* **wrapper:** write codex's final message to last-message.md ([#11](https://github.com/GauranshMathur/codex-headless-skill/issues/11)) ([b4a8d36](https://github.com/GauranshMathur/codex-headless-skill/commit/b4a8d3604223506d0a26ad6c408c26df16587a72))
+
 ## [0.1.1](https://github.com/GauranshMathur/codex-headless-skill/compare/v0.1.0...v0.1.1) (2026-09-11)
 
 
