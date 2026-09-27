@@ -560,12 +560,14 @@ def main(
     if effort.warning:
         print(f"warning: {effort.warning}", file=sys.stderr)
 
+    run_dir = Path(args.run_dir) if args.run_dir else _default_run_dir(args.cwd)
     argv_out = build_argv(
         model=model.slug,
         effort=effort.effort,
         prompt=prompt_reader(),
         sandbox=args.sandbox,
         cwd=args.cwd,
+        last_message_path=str(run_dir / "last-message.md"),
         mcp_servers=[] if args.mcp else _mcp_server_names(),
         codex_bin=args.codex_bin,
         resume=args.resume,
@@ -575,7 +577,6 @@ def main(
         print(" ".join(argv_out[:-1]))
         return 0
 
-    run_dir = Path(args.run_dir) if args.run_dir else _default_run_dir(args.cwd)
     started = time.monotonic()
 
     result = run_codex(
