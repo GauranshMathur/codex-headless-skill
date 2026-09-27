@@ -54,6 +54,14 @@ no third-party dependencies.
    command itself, and reads codex's stated assumptions — then resumes the same
    thread to fix anything wrong.
 
+## Second opinions
+
+`/codex-headless:advise` puts Codex (in a read-only sandbox) and a Fable 5.1
+subagent to work as advisors in parallel. Claude sends both the same brief and
+merges their verdicts. When they disagree, Claude shows both positions next to
+its own view and asks you to decide. It runs twice per task: before Claude
+commits to an approach, and before it calls the work done.
+
 ## Choosing a model
 
 The model list is read from codex at runtime, never hardcoded, so it stays
