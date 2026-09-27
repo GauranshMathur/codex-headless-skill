@@ -21,6 +21,10 @@
         {
           "type": "generic",
           "path": "skills/exec/SKILL.md"
+        },
+        {
+          "type": "generic",
+          "path": "skills/advise/SKILL.md"
         }
       ]
     }
