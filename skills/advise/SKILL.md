@@ -2,7 +2,7 @@
 name: advise
 description: Get a second opinion from two independent advisors at once, Codex (read-only via `codex exec`) and a Fable 5.1 subagent, then merge their verdicts. Use it twice on any multi-step task. Run it once before committing to an approach, and once before declaring the task done. It uses the same checkpoints as the built-in advisor and runs alongside it. Also use it when the user asks for "a second opinion", "ask codex and fable", or "multi-advisor". Do NOT use it on every edit, for one-line changes, or for questions you can answer directly.
 argument-hint: "[plan|done] <what you want reviewed>"
-version: 0.1.1 # x-release-please-version
+version: 0.2.0 # x-release-please-version
 allowed-tools:
   - Read
   - Glob
