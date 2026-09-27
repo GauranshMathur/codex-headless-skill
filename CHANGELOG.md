@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.1](https://github.com/GauranshMathur/codex-headless-skill/compare/v0.1.0...v0.1.1) (2026-09-11)
+
+
+### Bug Fixes
+
+* **skill:** keep effort at high unless the user asks for another ([#3](https://github.com/GauranshMathur/codex-headless-skill/issues/3)) ([a8caac5](https://github.com/GauranshMathur/codex-headless-skill/commit/a8caac5ce664072d6fad883665a7e15b442d4efc))
+
 ## 0.1.0 (2026-09-11)
 
 
