@@ -561,14 +561,16 @@ def main(
         print(f"warning: {effort.warning}", file=sys.stderr)
 
     run_dir = Path(args.run_dir) if args.run_dir else _default_run_dir(args.cwd)
+    prompt = prompt_reader()
+    mcp_disabled = [] if args.mcp else _mcp_server_names()
     argv_out = build_argv(
         model=model.slug,
         effort=effort.effort,
-        prompt=prompt_reader(),
+        prompt=prompt,
         sandbox=args.sandbox,
         cwd=args.cwd,
         last_message_path=str(run_dir / "last-message.md"),
-        mcp_servers=[] if args.mcp else _mcp_server_names(),
+        mcp_servers=mcp_disabled,
         codex_bin=args.codex_bin,
         resume=args.resume,
     )
@@ -577,29 +579,93 @@ def main(
         print(" ".join(argv_out[:-1]))
         return 0
 
+    run_dir.mkdir(parents=True, exist_ok=True)
+    (run_dir / "prompt.md").write_text(prompt, encoding="utf-8")
+
+    # Written once before codex starts and again when the run ends, so a run
+    # killed from outside is visibly unfinished rather than missing. The prompt
+    # is left out of argv here because prompt.md already holds it.
+    manifest = {
+        "outcome": "running",
+        "exit_code": None,
+        "detail": None,
+        "thread_id": None,
+        "started_at": _utc_now(),
+        "finished_at": None,
+        "duration_s": None,
+        "model": model.slug,
+        "model_source": model.source,
+        "effort": effort.effort,
+        "effort_requested": effort.requested,
+        "effort_warning": effort.warning,
+        "sandbox": args.sandbox,
+        "cwd": str(Path(args.cwd or Path.cwd()).resolve()),
+        "resume": args.resume,
+        "mcp_servers_disabled": mcp_disabled,
+        "argv": argv_out[:-1],
+    }
+    write_manifest(run_dir, manifest)
+
     started = time.monotonic()
 
-    result = run_codex(
-        argv_out,
-        run_dir=run_dir,
-        on_line=lambda line: print(f"codex | {line}", file=sys.stderr, flush=True),
-        timeout=args.timeout,
-        idle_timeout=args.idle_timeout,
-    )
+    try:
+        result = run_codex(
+            argv_out,
+            run_dir=run_dir,
+            on_line=lambda line: print(f"codex | {line}", file=sys.stderr, flush=True),
+            timeout=args.timeout,
+            idle_timeout=args.idle_timeout,
+        )
+    except BaseException as exc:
+        manifest.update(
+            outcome="wrapper_error",
+            detail=f"{type(exc).__name__}: {exc}",
+            finished_at=_utc_now(),
+            duration_s=round(time.monotonic() - started, 1),
+        )
+        write_manifest(run_dir, manifest)
+        raise
     outcome = decide_outcome(result.exit_code, result.events, timed_out=result.timed_out)
+    duration = time.monotonic() - started
+
+    manifest.update(
+        outcome=outcome.status,
+        exit_code=outcome.exit_code,
+        detail=outcome.detail,
+        thread_id=result.thread_id,
+        finished_at=_utc_now(),
+        duration_s=round(duration, 1),
+    )
+    write_manifest(run_dir, manifest)
 
     # Summary on stdout, progress on stderr: the caller parses one and watches
     # the other. THREAD is here so an interrupted run stays resumable.
     print("=== codex run summary ===")
     print(f"OUTCOME={outcome.status}  EXIT={outcome.exit_code}")
     print(f"MODEL={model.slug}/{effort.effort}  SANDBOX={args.sandbox}")
-    print(f"DURATION={time.monotonic() - started:.1f}s")
+    print(f"DURATION={duration:.1f}s")
     print(f"THREAD={result.thread_id or '-'}")
     print(f"RUN_DIR={run_dir}")
     if outcome.detail:
         print(f"DETAIL={outcome.detail}")
 
     return outcome.exit_code
+
+
+def write_manifest(run_dir: Path, manifest: dict) -> None:
+    """Replace the run's manifest.json in one step.
+
+    Written through a temporary file and renamed into place, so neither a reader
+    nor a kill partway through ever leaves half a manifest.
+    """
+    path = run_dir / "manifest.json"
+    partial = run_dir / "manifest.json.tmp"
+    partial.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
+    os.replace(partial, path)
+
+
+def _utc_now() -> str:
+    return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
 
 
 def _default_run_dir(cwd: str | None) -> Path:
