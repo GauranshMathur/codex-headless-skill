@@ -57,10 +57,58 @@ no third-party dependencies.
 ## Second opinions
 
 `/codex-headless:advise` puts Codex (in a read-only sandbox) and a Fable 5.1
-subagent to work as advisors in parallel. Claude sends both the same brief and
-merges their verdicts. When they disagree, Claude shows both positions next to
-its own view and asks you to decide. It runs twice per task: before Claude
-commits to an approach, and before it calls the work done.
+subagent to work as advisors in parallel. It runs only when you ask for it,
+either with the command or by asking for "a second opinion" or to "ask codex and
+fable". Claude sends both the same brief and merges their verdicts. When they
+disagree, Claude shows both positions next to its own view and asks you to
+decide.
+
+There are two checkpoints: before Claude commits to an approach, and before it
+calls the work done. Asking for advisors on the whole task covers both.
+Otherwise your request covers the checkpoint you asked about, and Claude asks
+you before it runs the other one.
+
+## Data handling
+
+**What goes to OpenAI.** Codex runs under your own Codex login and sends its
+work to OpenAI. That work includes the brief Claude writes, the repository
+files Codex reads, and the output of the commands it runs. How OpenAI keeps and
+uses that data depends on the terms of your OpenAI account. `exec` sends data
+only when you ask Claude to delegate a task, and `advise` only when you ask for
+a second opinion. The Fable advisor is a Claude subagent, so it sends nothing to
+OpenAI.
+
+**What changes in your Codex setup.** The plugin never writes to
+`~/.codex/config.toml`. Instead, each run passes `-c` overrides that apply to
+that run only:
+
+- `notify=[]` clears your `notify` hook, so it does not fire at the end of
+  every turn.
+- `mcp_servers.<name>.enabled=false`, one for each server in your
+  `config.toml`, turns off all your MCP servers. Pass the wrapper `--mcp` to
+  keep them on.
+- The model, reasoning effort, sandbox, and `model_reasoning_summary=auto` are
+  set explicitly, for the reasons in [Why this exists](#why-this-exists).
+
+[ADR 0003](docs/adr/0003-headless-isolation.md) explains why the notify hook and
+the MCP servers are turned off.
+
+**What stays on your machine.** Each run writes a folder under
+`~/.claude/codex-headless/runs/<repo>/<timestamp>/`:
+
+- `events.jsonl` holds Codex's full event stream: its messages and reasoning
+  summaries, the commands it ran and their output, and the paths of the files it
+  changed.
+- `stderr.log` holds Codex's own error output.
+- `last-message.md` holds Codex's final reply.
+
+These files can hold your code and anything Codex printed. The plugin never
+deletes them, so remove old runs when you no longer need them. To put a run's
+files somewhere else, pass the wrapper `--run-dir`. The wrapper writes nothing
+inside your repository, so the only changes there are the ones Codex makes.
+
+Codex also keeps its own session history under `~/.codex/`, which is what lets
+a thread be resumed. That is Codex's behaviour, not this plugin's.
 
 ## Choosing a model
 

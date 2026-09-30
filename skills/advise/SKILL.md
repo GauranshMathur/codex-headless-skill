@@ -1,6 +1,6 @@
 ---
 name: advise
-description: Get a second opinion from two independent advisors at once, Codex (read-only via `codex exec`) and a Fable 5.1 subagent, then merge their verdicts. Use it twice on any multi-step task. Run it once before committing to an approach, and once before declaring the task done. It uses the same checkpoints as the built-in advisor and runs alongside it. Also use it when the user asks for "a second opinion", "ask codex and fable", or "multi-advisor". Do NOT use it on every edit, for one-line changes, or for questions you can answer directly.
+description: Get a second opinion from two independent advisors at once, Codex (read-only via `codex exec`) and a Fable 5.1 subagent, then merge their verdicts. Use it only when the user asks for it, for example "get a second opinion", "ask codex and fable", "have codex and fable review this", or "multi-advisor". A run sends the brief and the repository files Codex reads to OpenAI through the user's Codex login, so never start it on your own initiative, however large or risky the task looks.
 argument-hint: "[plan|done] <what you want reviewed>"
 version: 0.2.0 # x-release-please-version
 allowed-tools:
@@ -20,9 +20,20 @@ merge what they say, and when they disagree, the user decides.
 
 ## When to run it
 
+Only when the user asks. A run sends the brief to OpenAI, and Codex sends the
+repository files it reads too, so the user has to want that. Never start it
+because a task looks large or risky.
+
+There are two checkpoints:
+
 - **plan**: when you have chosen an approach and have not yet written any of it.
 - **done**: when the work has been written and verified, and before you tell
   the user it is finished.
+
+The user's request covers the checkpoint they asked about, or both if they
+asked for advisors on the whole task. Before any other run, such as the `done`
+checkpoint after they asked only about the plan, ask with `AskUserQuestion`.
+If they do not say yes, carry on without it.
 
 Never run it on every edit. Two runs per task is the whole budget.
 
