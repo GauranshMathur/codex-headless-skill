@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.1](https://github.com/GauranshMathur/codex-headless-skill/compare/v0.3.0...v0.3.1) (2026-10-01)
+
+
+### Bug Fixes
+
+* **ci:** stop the release merge step failing when nothing is released ([#23](https://github.com/GauranshMathur/codex-headless-skill/issues/23)) ([c484a52](https://github.com/GauranshMathur/codex-headless-skill/commit/c484a521e3d2e0c4b8c4a117755772c5df3665c9))
+
 ## [0.3.0](https://github.com/GauranshMathur/codex-headless-skill/compare/v0.2.0...v0.3.0) (2026-10-01)
 
 
