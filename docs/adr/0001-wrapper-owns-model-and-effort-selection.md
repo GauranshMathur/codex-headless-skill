@@ -4,7 +4,8 @@ Date: 2026-09-10
 
 ## Status
 
-Accepted
+Accepted. Amended 2026-10-01 to match the code: the bundled catalog is read
+first, and the run manifest records where the model came from (#18).
 
 ## Context
 
@@ -28,14 +29,24 @@ replace the catalog wholesale, and any fixed list goes stale as models ship.
 The wrapper resolves both itself and always passes them explicitly.
 
 - Model: `--model` flag, then `CODEX_HEADLESS_MODEL`, then the lowest-`priority`
-  entry with `visibility == "list"` from `codex debug models`. An explicitly
-  requested slug is validated against the catalog and rejected by name if absent.
+  entry with `visibility == "list"` in the catalog. The catalog is read with
+  `codex debug models --bundled`, which needs no network, and with
+  `codex debug models` only if that fails. An explicitly requested slug is
+  validated against the catalog and rejected by name if absent.
 - Effort: defaults to `high` rather than the model's own default, and steps down
   the ladder when a model does not offer the requested rung.
 
 ## Consequences
 
-Reading the catalog at runtime keeps model selection correct as new models ship
-and honours a `model_catalog_json` override, at the cost of one ~20ms subprocess
-call per run. A run that could not read the catalog records that it fell back, so
-a degraded run is visible rather than looking identical to a healthy one.
+Reading the catalog at runtime keeps model selection correct as new models ship,
+at the cost of one ~20ms subprocess call per run.
+
+A `model_catalog_json` override is a known gap. Only the refreshed catalog picks
+it up, and the refreshed catalog is read only when the bundled read fails. So on
+a working install the override is not honoured.
+
+There is no silent fallback. A run that cannot read either catalog stops with
+`CatalogUnavailable` rather than guessing a model. Each run's `manifest.json`
+records where its model came from (`model_source`: `flag`, `env` or `catalog`)
+and any step down in effort. A run that did not get what was asked for is
+therefore visible after the fact, rather than looking identical to one that did.

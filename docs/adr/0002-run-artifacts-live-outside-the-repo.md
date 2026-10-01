@@ -4,7 +4,8 @@ Date: 2026-09-10
 
 ## Status
 
-Accepted
+Accepted. Amended 2026-10-01 to match the code: the override flag is
+`--run-dir`, and run folders are named by timestamp alone (#18).
 
 ## Context
 
@@ -29,9 +30,8 @@ path-unstable, which breaks resuming a thread across sessions and post-hoc audit
 
 ## Decision
 
-Artifacts go to `~/.claude/codex-headless/runs/<repo>/<timestamp>-<label>/`,
-overridable with `--out-dir`. The working repository is never written to by the
-wrapper.
+Artifacts go to `~/.claude/codex-headless/runs/<repo>/<timestamp>/`, overridable
+with `--run-dir`. The working repository is never written to by the wrapper.
 
 ## Consequences
 
