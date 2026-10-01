@@ -162,10 +162,12 @@ canned JSONL, which is also how the hang and did-nothing failure modes are
 reproduced on demand.
 
 Commits follow [Conventional Commits](https://www.conventionalcommits.org/).
-Releases are cut by release-please: each push to `main` refreshes an open
-release PR, and merging it tags the release, writes `CHANGELOG.md`, and bumps
-the version everywhere it appears — `version.txt`, both plugin manifests, and
-the skill's frontmatter.
+Releases are cut by release-please, and every `feat` or `fix` merged to `main`
+ships its own release. The workflow opens a release PR and merges it straight
+away. That tags the release, writes `CHANGELOG.md`, and bumps the version
+everywhere it appears: `version.txt`, both plugin manifests, and each skill's
+frontmatter. Commits that release nothing, such as `docs` and `ci`, wait for
+the next one that does.
 
 ## Licence
 

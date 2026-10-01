@@ -8,6 +8,12 @@ permissions:
   contents: write
   pull-requests: write
 
+# Runs merge and tag releases, so two at once could race on the same release
+# PR. Queue them instead, and never cancel one partway through a release.
+concurrency:
+  group: release-please
+  cancel-in-progress: false
+
 jobs:
   release-please:
     runs-on: ubuntu-latest
@@ -16,6 +22,28 @@ jobs:
       # the release, writes CHANGELOG.md, and bumps the version in both plugin
       # manifests via the extra-files config.
       - uses: googleapis/release-please-action@v4
+        id: release
+        with:
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
+
+      # Every releasable commit ships its own release: merge the release PR as
+      # soon as it is opened or refreshed. `pr` is unset when there was nothing
+      # to release, as for docs or ci commits.
+      - name: Merge the release PR
+        if: ${{ steps.release.outputs.pr }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ fromJSON(steps.release.outputs.pr).number }}
+        run: gh pr merge "$PR_NUMBER" --squash --repo "$GITHUB_REPOSITORY"
+
+      # A merge made with GITHUB_TOKEN does not trigger this workflow again, so
+      # run release-please once more to tag and publish what was just merged.
+      # If this misses it, the next push to main releases it instead, since
+      # release-please picks up any merged PR still labelled autorelease: pending.
+      - name: Tag and publish the release
+        if: ${{ steps.release.outputs.pr }}
+        uses: googleapis/release-please-action@v4
         with:
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
