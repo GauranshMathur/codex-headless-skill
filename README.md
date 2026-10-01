@@ -101,8 +101,12 @@ the MCP servers are turned off.
   changed.
 - `stderr.log` holds Codex's own error output.
 - `last-message.md` holds Codex's final reply.
+- `prompt.md` holds the brief exactly as Codex received it.
+- `manifest.json` records how the run was set up and how it ended: model,
+  effort, sandbox, the command line without the brief, timings, outcome, and
+  thread id.
 
-These files can hold your code and anything Codex printed. The plugin never
+These files can hold your code, your brief, and anything Codex printed. The plugin never
 deletes them, so remove old runs when you no longer need them. To put a run's
 files somewhere else, pass the wrapper `--run-dir`. The wrapper writes nothing
 inside your repository, so the only changes there are the ones Codex makes.

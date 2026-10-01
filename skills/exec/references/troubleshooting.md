@@ -22,6 +22,9 @@ design — see `docs/adr/0002`):
 |---|---|
 | `events.jsonl` | the raw stream; the ground truth when a rendered line looks wrong |
 | `stderr.log` | codex's own human-readable progress and any startup errors |
+| `last-message.md` | codex's final reply |
+| `prompt.md` | the brief exactly as codex received it |
+| `manifest.json` | the model and where it came from, effort requested and used, sandbox, argv without the brief, timings, outcome, and thread id. `"outcome": "running"` on a finished process means the wrapper was killed before it could record the end |
 
 When the summary and the diff disagree, `events.jsonl` settles it — the
 `file_change` events record what codex actually wrote.
