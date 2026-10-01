@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.3.0](https://github.com/GauranshMathur/codex-headless-skill/compare/v0.2.0...v0.3.0) (2026-10-01)
+
+
+### Features
+
+* **runner:** write the prompt and a run manifest to each run folder ([#17](https://github.com/GauranshMathur/codex-headless-skill/issues/17)) ([e2a67db](https://github.com/GauranshMathur/codex-headless-skill/commit/e2a67db213cf6e7199d1e6423659db2dc687310d)), closes [#16](https://github.com/GauranshMathur/codex-headless-skill/issues/16)
+
+
+### Bug Fixes
+
+* **runner:** read the model catalog from --codex-bin ([#20](https://github.com/GauranshMathur/codex-headless-skill/issues/20)) ([d944341](https://github.com/GauranshMathur/codex-headless-skill/commit/d944341dd1f3b0e14dae86fbe1c280c556c08b21))
+* **skill:** run advise only when the user asks, and document data handling ([#14](https://github.com/GauranshMathur/codex-headless-skill/issues/14)) ([ab9c683](https://github.com/GauranshMathur/codex-headless-skill/commit/ab9c683d04a349332b436a01c62d3ba6b1e3aa2d))
+
 ## [0.2.0](https://github.com/GauranshMathur/codex-headless-skill/compare/v0.1.1...v0.2.0) (2026-09-27)
 
 
