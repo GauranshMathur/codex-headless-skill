@@ -1,7 +1,8 @@
 ---
 name: advise
-description: Get a second opinion from two independent advisors at once, Codex (read-only via `codex exec`) and a Fable 5.1 subagent, then merge their verdicts. Use it only when the user asks for it, for example "get a second opinion", "ask codex and fable", "have codex and fable review this", or "multi-advisor". A run sends the brief and the repository files Codex reads to OpenAI through the user's Codex login, so never start it on your own initiative, however large or risky the task looks.
+description: Get a second opinion from two independent advisors at once, Codex (read-only via `codex exec`) and a Claude advisor subagent, then merge their verdicts. Runs only when the user invokes it, because a run sends the brief and the repository files Codex reads to OpenAI through the user's Codex login.
 argument-hint: "[plan|done] <what you want reviewed>"
+disable-model-invocation: true
 version: 0.3.1 # x-release-please-version
 allowed-tools:
   - Read
@@ -15,8 +16,8 @@ allowed-tools:
 # Second opinions from Codex and Fable
 
 You keep doing the work. Two advisors review it independently: Codex in a
-read-only sandbox, and Fable 5.1 as a subagent. Neither one writes code. You
-merge what they say, and when they disagree, the user decides.
+read-only sandbox, and a Claude advisor subagent (Fable). Neither one writes
+code. You merge what they say, and when they disagree, the user decides.
 
 ## When to run it
 

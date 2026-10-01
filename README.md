@@ -56,12 +56,11 @@ no third-party dependencies.
 
 ## Second opinions
 
-`/codex-headless:advise` puts Codex (in a read-only sandbox) and a Fable 5.1
-subagent to work as advisors in parallel. It runs only when you ask for it,
-either with the command or by asking for "a second opinion" or to "ask codex and
-fable". Claude sends both the same brief and merges their verdicts. When they
-disagree, Claude shows both positions next to its own view and asks you to
-decide.
+`/codex-headless:advise` puts Codex (in a read-only sandbox) and a Claude
+advisor subagent to work as advisors in parallel. It runs only when you invoke
+the command. Claude cannot start it on its own. Claude sends both the same
+brief and merges their verdicts. When they disagree, Claude shows both
+positions next to its own view and asks you to decide.
 
 There are two checkpoints: before Claude commits to an approach, and before it
 calls the work done. Asking for advisors on the whole task covers both.
