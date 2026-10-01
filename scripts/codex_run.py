@@ -37,9 +37,8 @@ class UnknownModel(ValueError):
 class ModelChoice:
     """A resolved model, plus where the choice came from.
 
-    `source` is recorded in the run manifest so a degraded run (one that fell
-    back rather than reading the catalog) is visible after the fact instead of
-    looking identical to a healthy one.
+    `source` is "flag", "env" or "catalog", and is recorded in the run manifest
+    so it is visible after the fact which of the three picked the model.
     """
 
     slug: str
