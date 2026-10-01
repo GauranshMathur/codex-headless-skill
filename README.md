@@ -56,17 +56,44 @@ no third-party dependencies.
 
 ## Second opinions
 
-`/codex-headless:advise` puts Codex (in a read-only sandbox) and a Fable 5.1
-subagent to work as advisors in parallel. It runs only when you ask for it,
-either with the command or by asking for "a second opinion" or to "ask codex and
-fable". Claude sends both the same brief and merges their verdicts. When they
-disagree, Claude shows both positions next to its own view and asks you to
-decide.
+`/codex-headless:advise` puts Codex (in a read-only sandbox) and a Claude
+advisor subagent to work as advisors in parallel. Claude sends both the same
+brief and merges their verdicts. When they disagree, Claude shows both
+positions next to its own view and asks you to decide.
 
 There are two checkpoints: before Claude commits to an approach, and before it
 calls the work done. Asking for advisors on the whole task covers both.
 Otherwise your request covers the checkpoint you asked about, and Claude asks
 you before it runs the other one.
+
+It never runs on Claude's own initiative. There are three ways to start it:
+
+- **By hand.** Type `/codex-headless:advise`.
+- **By asking.** Ask for "a second opinion" or to "ask codex and fable", and
+  Claude runs it. Permission rules control this path. To have Claude ask you
+  first every time, add `"ask": ["Skill(codex-headless:advise)"]` to
+  `permissions` in your settings. To allow only the command, use `"deny"`
+  instead; a deny rule does not block the command.
+- **As a QA check at the end of your own subagents.** Preload the skill in
+  the subagent's definition and tell it when to run:
+
+  ```markdown
+  ---
+  name: my-implementer
+  description: ...
+  skills:
+    - codex-headless:advise
+  ---
+
+  ...your instructions...
+
+  Before you report back, run the advise skill's `done` checkpoint on your
+  changes and include its verdict in your report.
+  ```
+
+  A subagent cannot start another subagent or ask you a question, so inside
+  one the skill runs Codex alone as the second model and hands any
+  disagreement back to the main conversation instead of asking you.
 
 ## Data handling
 
