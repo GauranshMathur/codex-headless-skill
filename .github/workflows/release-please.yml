@@ -32,10 +32,14 @@ jobs:
       # to release, as for docs or ci commits.
       - name: Merge the release PR
         if: ${{ steps.release.outputs.pr }}
+        # Step env is evaluated even when `if` skips the step, so fromJSON on an
+        # empty `pr` would fail the job. Parse the PR in the shell instead.
         env:
           GH_TOKEN: ${{ github.token }}
-          PR_NUMBER: ${{ fromJSON(steps.release.outputs.pr).number }}
-        run: gh pr merge "$PR_NUMBER" --squash --repo "$GITHUB_REPOSITORY"
+          RELEASE_PR: ${{ steps.release.outputs.pr }}
+        run: |
+          pr_number="$(jq -r '.number' <<<"$RELEASE_PR")"
+          gh pr merge "$pr_number" --squash --repo "$GITHUB_REPOSITORY"
 
       # A merge made with GITHUB_TOKEN does not trigger this workflow again, so
       # run release-please once more to tag and publish what was just merged.
