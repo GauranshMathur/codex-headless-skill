@@ -1,8 +1,7 @@
 ---
 name: advise
-description: Get a second opinion from two independent advisors at once, Codex (read-only via `codex exec`) and a Claude advisor subagent, then merge their verdicts. Runs only when the user invokes it, because a run sends the brief and the repository files Codex reads to OpenAI through the user's Codex login.
+description: Get a second opinion from two independent advisors at once, Codex (read-only via `codex exec`) and a Claude advisor subagent, then merge their verdicts. Use it only when the user asks for it, for example "get a second opinion", "ask codex and fable", or "multi-advisor", or when the user's own configuration asks for it, such as a subagent definition that runs it as a QA check before reporting back. A run sends the brief and the repository files Codex reads to OpenAI through the user's Codex login, so never start it on your own initiative, however large or risky the task looks.
 argument-hint: "[plan|done] <what you want reviewed>"
-disable-model-invocation: true
 version: 0.3.1 # x-release-please-version
 allowed-tools:
   - Read
@@ -21,7 +20,9 @@ code. You merge what they say, and when they disagree, the user decides.
 
 ## When to run it
 
-Only when the user asks. A run sends the brief to OpenAI, and Codex sends the
+Only when the user asks, either in the conversation or through their own
+configuration, such as a subagent definition that tells you to run it before
+you report back. A run sends the brief to OpenAI, and Codex sends the
 repository files it reads too, so the user has to want that. Never start it
 because a task looks large or risky.
 
@@ -37,6 +38,18 @@ checkpoint after they asked only about the plan, ask with `AskUserQuestion`.
 If they do not say yes, carry on without it.
 
 Never run it on every edit. Two runs per task is the whole budget.
+
+### Inside a subagent
+
+When you are a subagent that was told to run this as a QA check, run the
+`done` checkpoint once, before you report back. A subagent cannot start
+another subagent or ask the user, so:
+
+- Skip the Fable advisor and run Codex alone. Report the Fable advisor as
+  skipped, not as failed.
+- Do not use `AskUserQuestion`. When Codex disagrees with your work on
+  anything that changes the verdict, put both positions in your report to the
+  parent and let it decide.
 
 ## Step 1: Write one shared brief
 
