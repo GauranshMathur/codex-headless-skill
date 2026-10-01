@@ -448,17 +448,21 @@ def run_codex(
     )
 
 
-def load_catalog() -> dict:
+def load_catalog(codex_bin: str = "codex") -> dict:
     """Read codex's model catalog.
 
     The bundled catalog is the primary source: it needs no network, returns in
     milliseconds, and on the builds checked matches the refreshed one byte for
     byte. The network refresh is the fallback, since it is what picks up a
     `model_catalog_json` override or a server-side addition.
+
+    `codex_bin` must be the same binary the run will use. Reading the catalog
+    from whatever `codex` is on PATH would fail outright when there is none,
+    and could describe a different build when there is.
     """
     for command in (
-        ["codex", "debug", "models", "--bundled"],
-        ["codex", "debug", "models"],
+        [codex_bin, "debug", "models", "--bundled"],
+        [codex_bin, "debug", "models"],
     ):
         try:
             done = subprocess.run(command, capture_output=True, text=True, timeout=30)
@@ -470,7 +474,8 @@ def load_catalog() -> dict:
             except json.JSONDecodeError:
                 continue
     raise CatalogUnavailable(
-        "Could not read the codex model catalog. Is codex installed and on PATH?"
+        f"Could not read the codex model catalog from {codex_bin!r}. Is codex "
+        "installed? If it is not on PATH, pass --codex-bin or set CODEX_BIN."
     )
 
 
@@ -533,11 +538,11 @@ def build_parser() -> argparse.ArgumentParser:
 def main(
     argv: list[str] | None = None,
     *,
-    catalog_loader: Callable[[], dict] = load_catalog,
+    catalog_loader: Callable[[], dict] | None = None,
     prompt_reader: Callable[[], str] = read_prompt,
 ) -> int:
     args = build_parser().parse_args(argv)
-    catalog = catalog_loader()
+    catalog = catalog_loader() if catalog_loader else load_catalog(args.codex_bin)
 
     if args.list_models:
         default = resolve_model(catalog, env={})
