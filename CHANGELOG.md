@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.0](https://github.com/GauranshMathur/codex-headless-skill/compare/v0.3.1...v0.4.0) (2026-10-04)
+
+
+### Features
+
+* **advise:** run by hand, on request, or as a subagent QA check ([#26](https://github.com/GauranshMathur/codex-headless-skill/issues/26)) ([d801f02](https://github.com/GauranshMathur/codex-headless-skill/commit/d801f0216f3f81f3c6d78b8fc5a0bb7fe9a17eac))
+
 ## [0.3.1](https://github.com/GauranshMathur/codex-headless-skill/compare/v0.3.0...v0.3.1) (2026-10-01)
 
 
