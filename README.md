@@ -91,9 +91,11 @@ It never runs on Claude's own initiative. There are three ways to start it:
   changes and include its verdict in your report.
   ```
 
-  A subagent cannot start another subagent or ask you a question, so inside
-  one the skill runs Codex alone as the second model and hands any
-  disagreement back to the main conversation instead of asking you.
+  A subagent cannot ask you a question, so inside one the skill hands any
+  disagreement back to the main conversation instead of asking you. It still
+  uses both advisors when the subagent is allowed to start one of its own.
+  When it is not, because its definition leaves out the `Agent` tool or it is
+  at Claude Code's nesting limit, the skill runs Codex alone.
 
 ## Data handling
 

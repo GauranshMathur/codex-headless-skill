@@ -42,14 +42,16 @@ Never run it on every edit. Two runs per task is the whole budget.
 ### Inside a subagent
 
 When you are a subagent that was told to run this as a QA check, run the
-`done` checkpoint once, before you report back. A subagent cannot start
-another subagent or ask the user, so:
+`done` checkpoint once, before you report back. Two things differ there:
 
-- Skip the Fable advisor and run Codex alone. Report the Fable advisor as
+- A subagent has the `Agent` tool only when its definition allows it and it
+  is not at the nesting limit. If you have it, dispatch the Fable advisor as
+  usual. If you do not, run Codex alone and report the Fable advisor as
   skipped, not as failed.
-- Do not use `AskUserQuestion`. When Codex disagrees with your work on
-  anything that changes the verdict, put both positions in your report to the
-  parent and let it decide.
+- A subagent cannot ask the user, so do not use `AskUserQuestion`. When the
+  advisors disagree with your work, or with each other, on anything that
+  changes the verdict, put the positions in your report to the parent and let
+  it decide.
 
 ## Step 1: Write one shared brief
 
