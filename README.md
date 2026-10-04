@@ -103,9 +103,18 @@ It never runs on Claude's own initiative. There are three ways to start it:
 work to OpenAI. That work includes the brief Claude writes, the repository
 files Codex reads, and the output of the commands it runs. How OpenAI keeps and
 uses that data depends on the terms of your OpenAI account. `exec` sends data
-only when you ask Claude to delegate a task, and `advise` only when you ask for
-a second opinion. The Fable advisor is a Claude subagent, so it sends nothing to
-OpenAI.
+only when you ask Claude to delegate a task. `advise` sends data when you ask
+for a second opinion, or when a subagent definition tells it to run. The Fable
+advisor is a Claude subagent, so it sends nothing to OpenAI.
+
+**A subagent definition can send code to OpenAI without asking you first.**
+`advise` treats a subagent definition that tells it to run as your own
+request. It cannot tell who wrote that file, and inside a subagent it cannot
+stop to ask you. So a definition that came with a cloned repository or with
+another plugin can start a Codex run, and send that run's brief and files to
+OpenAI, when you did not ask for one in the conversation. Read any subagent
+definition you did not write before you use it, and look for one that preloads
+or names `codex-headless:advise`.
 
 **What changes in your Codex setup.** The plugin never writes to
 `~/.codex/config.toml`. Instead, each run passes `-c` overrides that apply to
