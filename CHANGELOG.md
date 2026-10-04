@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.1](https://github.com/GauranshMathur/codex-headless-skill/compare/v0.4.0...v0.4.1) (2026-10-04)
+
+
+### Bug Fixes
+
+* **advise:** use both advisors inside a subagent when it can start one ([#29](https://github.com/GauranshMathur/codex-headless-skill/issues/29)) ([b4bbedc](https://github.com/GauranshMathur/codex-headless-skill/commit/b4bbedc54e025dfb09558c7f852c52e039941867)), closes [#28](https://github.com/GauranshMathur/codex-headless-skill/issues/28)
+
 ## [0.4.0](https://github.com/GauranshMathur/codex-headless-skill/compare/v0.3.1...v0.4.0) (2026-10-04)
 
 

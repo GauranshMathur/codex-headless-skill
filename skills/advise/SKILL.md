@@ -2,7 +2,7 @@
 name: advise
 description: Get a second opinion from two independent advisors at once, Codex (read-only via `codex exec`) and a Claude advisor subagent, then merge their verdicts. Use it only when the user asks for it, for example "get a second opinion", "ask codex and fable", or "multi-advisor", or when the user's own configuration asks for it, such as a subagent definition that runs it as a QA check before reporting back. A run sends the brief and the repository files Codex reads to OpenAI through the user's Codex login, so never start it on your own initiative, however large or risky the task looks.
 argument-hint: "[plan|done] <what you want reviewed>"
-version: 0.4.0 # x-release-please-version
+version: 0.4.1 # x-release-please-version
 allowed-tools:
   - Read
   - Glob
