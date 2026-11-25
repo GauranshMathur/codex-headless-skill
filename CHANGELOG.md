@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.2](https://github.com/GauranshMathur/codex-headless-skill/compare/v0.4.1...v0.4.2) (2026-11-25)
+
+
+### Bug Fixes
+
+* **plugin:** stop pre-approving Bash and add a listing icon ([#33](https://github.com/GauranshMathur/codex-headless-skill/issues/33)) ([94f33b0](https://github.com/GauranshMathur/codex-headless-skill/commit/94f33b0569401ceafe71f3f87b91d6b1336d5edc))
+
 ## [0.4.1](https://github.com/GauranshMathur/codex-headless-skill/compare/v0.4.0...v0.4.1) (2026-10-04)
 
 
