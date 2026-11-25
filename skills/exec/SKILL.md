@@ -7,9 +7,6 @@ allowed-tools:
   - Read
   - Glob
   - Grep
-  - Bash
-  - AskUserQuestion
-  - Agent(codex-headless:codex-runner)
 ---
 
 # Delegating to Codex headless
