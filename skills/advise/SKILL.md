@@ -7,9 +7,6 @@ allowed-tools:
   - Read
   - Glob
   - Grep
-  - Bash
-  - AskUserQuestion
-  - Agent(codex-headless:fable-advisor)
 ---
 
 # Second opinions from Codex and Fable
